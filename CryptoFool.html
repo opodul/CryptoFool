@@ -17,7 +17,8 @@
     <div>
         <label>Salt:</label>
         <input type="text" id="salt" spellcheck="false" autocomplete="off">
-        <button onclick="generateAlphanumericSalt()">Random Salt</button>
+        <button onclick="generateAlphanumericSalt()">Gen AlphaNumeric Salt</button>
+        <button onclick="generateCustomSalt()">Gen Custom Salt</button>
     </div>
     
     <div>
@@ -44,6 +45,24 @@
         
         for (let i = 0; i < 16; i++) {
             result += chars[randomValues[i] % chars.length];
+        }
+        document.getElementById('salt').value = result;
+    }
+    
+    function generateCustomSalt() {
+        const lowers = "abcdefghijkmnopqrstuvwxyz", uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ", digits = "123456789";
+        //             excluded:"l"                 excluded:       "I"  "O"             excluded: "0" 
+        let result = "", lastType = ""; 
+        for (let i = 0; i < 16; i++) {
+            let pool = (i === 0) ? lowers + uppers + digits :       /* 1st char can be anything          */  
+                       (lastType === 'digit') ? lowers + uppers :   /* after a digit only lower or upper */
+                       (lastType === 'lower') ? uppers + digits :   /* after a lower only upper or digit */
+                                                lowers + digits ;   /* after a upper only lower or digit */
+                       
+            const r = window.crypto.getRandomValues(new Uint32Array(1))[0];
+            const char = pool[r % pool.length];
+            result += char;
+            lastType = digits.includes(char) ? 'digit' : lowers.includes(char) ? 'lower' : 'upper';
         }
         document.getElementById('salt').value = result;
     }
