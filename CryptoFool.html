@@ -42,6 +42,7 @@
     
     <div>
         <button onclick="encrypt()">ENCRYPT</button>
+        <button onclick="decrypt()">DECRYPT</button>
     </div>
     
     <div>
@@ -127,6 +128,16 @@
         ivdata_ui8array.set(new Uint8Array(data_encrypted), iv.length); // put data_encrypted after iv
         const ivdata_out_b64 = btoa(String.fromCharCode(...ivdata_ui8array));  // spread data_ui8array as btoa want a binaryString
         document.getElementById('dataout').innerText = ivdata_out_b64;
+    }
+    async function decrypt() {
+        const decoder = new TextDecoder();
+        const key = await deriveKey();
+        const datain = document.getElementById('datain').value;    
+        const ivdata_ui8array = new Uint8Array(atob(datain).split("").map(c => c.charCodeAt(0)));
+        const iv = ivdata_ui8array.slice(0, 12);   // first 12 is the iv
+        const data_encrypted = ivdata_ui8array.slice(12); // after 12 is the data
+        const dataout = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data_encrypted);
+        document.getElementById('dataout').innerText = decoder.decode(dataout);
     }
 
 
