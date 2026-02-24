@@ -8,12 +8,14 @@
     </style>
 </head>
 <body>
-
     <div>
-        <label>Password:</label>
-        <input type="password" id="pass" spellcheck="false" autocomplete="off">
-    </div>
-    
+        <label>Metadata <code>Hint$Salt!Iter#Data</code></label>
+        <textarea id="metadata" placeholder="Paste full string here..." oninput="parseMetadata()"></textarea>
+    </div> 
+    <div>
+        <label>Hint:</label>
+        <input type="text" id="hint" spellcheck="false" autocomplete="off">
+     </div>      
     <div>
         <label>Salt:</label>
         <input type="text" id="salt" spellcheck="false" autocomplete="off">
@@ -24,6 +26,11 @@
     <div>
         <label>Iterations:</label>
         <input type="number" id="iter" value="600000">
+    </div>
+
+    <div>
+        <label>Password:</label>
+        <input type="password" id="pass" spellcheck="false" autocomplete="off">
     </div>
     
     <div>
@@ -37,7 +44,7 @@
     
     <div>
         <label>Data In:</label>
-        <input type="text" id="datain"  spellcheck="false" autocomplete="off">
+        <textarea type="text" id="datain"  spellcheck="false" autocomplete="off"></textarea>
     </div>
     
     <div>
@@ -55,10 +62,10 @@
     function generateAlphanumericSalt() {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         let result = "";
-        const randomValues = new Uint32Array(16);
+        const randomValues = new Uint32Array(12);
         window.crypto.getRandomValues(randomValues);
         
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 12; i++) {
             result += chars[randomValues[i] % chars.length];
         }
         document.getElementById('salt').value = result;
@@ -68,7 +75,7 @@
         const lowers = "abcdefghijkmnopqrstuvwxyz", uppers = "ABCDEFGHJKLMNPQRSTUVWXYZ", digits = "123456789";
         //             excluded:"l"                 excluded:       "I"  "O"             excluded: "0" 
         let result = "", lastType = ""; 
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 12; i++) {
             let pool = (i === 0) ? lowers + uppers + digits :       /* 1st char can be anything          */  
                        (lastType === 'digit') ? lowers + uppers :   /* after a digit only lower or upper */
                        (lastType === 'lower') ? uppers + digits :   /* after a lower only upper or digit */
@@ -119,6 +126,10 @@
     
     async function encrypt() {
         const encoder = new TextEncoder();
+        const hint = document.getElementById('hint').value;
+        const salt = document.getElementById('salt').value;
+        const iter = document.getElementById('iter').value;
+        
         const key = await deriveKey();
         const datain = document.getElementById('datain').value;
         const iv = window.crypto.getRandomValues(new Uint8Array(12));
@@ -127,7 +138,8 @@
         ivdata_ui8array.set(iv , 0); // put iv at position 0
         ivdata_ui8array.set(new Uint8Array(data_encrypted), iv.length); // put data_encrypted after iv
         const ivdata_out_b64 = btoa(String.fromCharCode(...ivdata_ui8array));  // spread data_ui8array as btoa want a binaryString
-        document.getElementById('dataout').innerText = ivdata_out_b64;
+        const dataout = hint + '$' + salt + '!' + iter + '#' + ivdata_out_b64;
+        document.getElementById('dataout').innerText = dataout
     }
     async function decrypt() {
         const decoder = new TextDecoder();
@@ -140,6 +152,20 @@
         document.getElementById('dataout').innerText = decoder.decode(dataout);
     }
 
+    function parseMetadata() {
+        const str = document.getElementById('metadata').value;
+        try {
+            if (str.includes('$') && str.includes('!') && str.includes('#')) {
+                const [hint, rest] = str.split('$');
+                const [salt, rest2] = rest.split('!');
+                const [iter, data] = rest2.split('#');
+                document.getElementById('hint').value = hint;
+                document.getElementById('salt').value = salt;
+                document.getElementById('iter').value = iter;
+                document.getElementById('datain').value = data;
+            }
+        } catch(e) {}
+    }
 
 </script>
 </body>
